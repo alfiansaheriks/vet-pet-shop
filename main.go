@@ -9,11 +9,11 @@ import (
 )
 
 func main() {
-	config.ConnectDatabase()
+	db := config.ConnectDatabase()
 
 	r := gin.Default()
 
-	routes.AuthRoutes(r)
+	routes.AuthRoutes(r, db)
 
 	fmt.Println("Server started at http://localhost:8080")
 	r.Run(":8080")
