@@ -10,8 +10,12 @@ import (
 
 func AuthRoutes(r *gin.Engine, db *gorm.DB) {
 	r.POST("/register", controllers.Register)
-	r.POST("/login", controllers.Login)
-	// r.GET("/users", controllers.GetUsers)
+	r.POST("/login", func(c *gin.Context) {
+		controllers.Login(c, db)
+	})
+	r.POST("/refresh-token", func(c *gin.Context) {
+		controllers.RefreshTokenHandler(c, db)
+	})
 
 	protected := r.Group("/api")
 	protected.Use(middlewares.AuthMiddleware(db))

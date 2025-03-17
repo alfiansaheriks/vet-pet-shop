@@ -41,7 +41,10 @@ func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 			return utils.GetJWTKey(), nil
 		})
 		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token tidak valid"})
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Token tidak valid",
+				"token": tokenString,
+			})
 			c.Abort()
 			return
 		}
