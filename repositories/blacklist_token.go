@@ -12,6 +12,14 @@ type BlacklistToken struct {
 	ExpiredAt time.Time `gorm:"not null"`
 }
 
+type RefreshToken struct {
+	ID        uint   `gorm:"primaryKey"`
+	Token     string `gorm:"uniqueIndex"`
+	UserID    uint   `gorm:"index;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	ExpiresAt time.Time
+	CreatedAt time.Time
+}
+
 func AddBlacklistToken(db *gorm.DB, token string, expiredAt time.Time) error {
 	blacklist := BlacklistToken{
 		Token:     token,

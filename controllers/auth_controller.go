@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -64,7 +65,7 @@ func Register(c *gin.Context) {
 	})
 }
 
-func Login(c *gin.Context) {
+func Login(c *gin.Context, db *gorm.DB) {
 	var input models.UserLoginInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
@@ -103,6 +104,13 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	refreshTokenRepo := repositories.RefreshTokenRepository{DB: db}
+	//delete all refresh token by user id
+	_ = refreshTokenRepo.DeleteTokensByUserID(user.ID)
+
+	refreshToken, _ := utils.GenerateRefreshToken(user.ID)
+	_ = refreshTokenRepo.SaveRefreshToken(user.ID, refreshToken, time.Now().Add(7*24*time.Hour))
+
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "token",
 		Value:    token,
@@ -112,73 +120,132 @@ func Login(c *gin.Context) {
 	})
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "User logged in successfully!",
-		"token":   token,
-		"user": gin.H{
-			"id":        user.ID,
-			"name":      user.Name,
-			"email":     user.Email,
-			"role":      user.Role,
-			"token_exp": time.Now().Add(24 * time.Hour),
-		},
+		"message":       "User logged in successfully!",
+		"access_token":  token,
+		"refresh_token": refreshToken,
 	})
 }
 
 func Logout(c *gin.Context, db *gorm.DB) {
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{
+	var req struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
 			"status": "error",
-			"error":  "Missing token",
+			"error":  "Invalid request",
+		})
+	}
+
+	refreshTokenRepo := repositories.RefreshTokenRepository{DB: db}
+	refreshToken, err := refreshTokenRepo.GetRefreshToken(req.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":        "error",
+			"error":         "Failed to get refresh token",
+			"refresh_token": req.RefreshToken,
 		})
 		return
 	}
 
-	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-	if tokenString == authHeader {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status": "error",
-			"error":  "Invalid token format",
-		})
-	}
+	log.Printf("deleting refresh token: %v", refreshToken)
 
-	token, err := jwt.ParseWithClaims(tokenString, &utils.Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return utils.GetJWTKey(), nil
-	})
-	if err != nil || !token.Valid {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status": "error",
-			"error":  "Invalid token",
-		})
-		return
-	}
-
-	claims, ok := token.Claims.(*utils.Claims)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status": "error",
-			"error":  "Invalid token",
-		})
-		return
-	}
-
-	blacklistedToken := models.BlacklistedToken{
-		Token:     tokenString,
-		ExpiredAt: claims.ExpiresAt.Time,
-	}
-
-	if err := db.Create(&blacklistedToken).Error; err != nil {
+	err = refreshTokenRepo.DeleteRefreshToken(req.RefreshToken)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
-			"error":  "Failed to blacklist token",
+			"error":  "Failed to delete refresh token",
 		})
 		return
 	}
+
+	authHeader := c.GetHeader("Authorization")
+	if authHeader != "" {
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenString != authHeader {
+			token, _ := jwt.ParseWithClaims(tokenString, &utils.Claims{}, func(token *jwt.Token) (interface{}, error) {
+				return utils.GetJWTKey(), nil
+			})
+
+			if claims, ok := token.Claims.(*utils.Claims); ok {
+				blacklistedToken := models.BlacklistedToken{
+					Token:     tokenString,
+					ExpiredAt: claims.ExpiresAt.Time,
+				}
+				db.Create(&blacklistedToken)
+			}
+		}
+	}
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour),
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
 		"message": "User logged out successfully!",
 	})
+}
+
+func RefreshTokenHandler(c *gin.Context, db *gorm.DB) {
+	var req struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"error":  "Invalid request",
+		})
+		return
+	}
+
+	refreshTokenRepo := repositories.RefreshTokenRepository{DB: db}
+	refreshToken, err := refreshTokenRepo.GetRefreshToken(req.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"error":  "Failed to get refresh token",
+		})
+		return
+	}
+
+	if time.Now().After(refreshToken.ExpiresAt) {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status": "error",
+			"error":  "Refresh token expired",
+		})
+		return
+	}
+
+	user, err := repositories.GetUserByID(refreshToken.UserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"error":  "Failed to get user",
+		})
+		return
+	}
+
+	// Generate access token baru
+	newAccessToken, _ := utils.GenerateJWT(user.ID, user.Email, user.Role)
+
+	// Hapus refresh token lama dan re create
+	_ = refreshTokenRepo.DeleteRefreshToken(req.RefreshToken)
+	newRefreshToken, _ := utils.GenerateRefreshToken(user.ID)
+	_ = refreshTokenRepo.SaveRefreshToken(user.ID, newRefreshToken, time.Now().Add(7*24*time.Hour))
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":        "success",
+		"access_token":  newAccessToken,
+		"refresh_token": newRefreshToken,
+	})
+
 }
 
 func GetUsers(c *gin.Context) {
