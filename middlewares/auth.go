@@ -49,6 +49,18 @@ func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		claims, ok := token.Claims.(*utils.Claims)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status": "error",
+				"error":  "Token tidak valid",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Set("id", claims.ID)
+		c.Set("role", claims.Role)
 		c.Next()
 	}
 }
