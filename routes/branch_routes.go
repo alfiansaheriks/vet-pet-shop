@@ -20,5 +20,11 @@ func BranchRoutes(r *gin.Engine, db *gorm.DB) {
 		branchGroup.PUT("/:id", middlewares.AdminMiddleware(), func(c *gin.Context) { controllers.UpdateBranch(c, db) })
 		branchGroup.DELETE("/:id", middlewares.AdminMiddleware(), func(c *gin.Context) { controllers.DeleteBranch(c, db) })
 
+		branchGroup.GET("/doctors", func(c *gin.Context) { controllers.GetBranchDoctors(c, db) })
+		branchGroup.GET("/doctors/:id", func(c *gin.Context) { controllers.GetBranchDoctorById(c, db) })
+
+		branchGroup.POST("/doctors", middlewares.AdminMiddleware(), func(c *gin.Context) { controllers.CreateBranchDoctor(c, db) })
+		branchGroup.PUT("/doctors/:id", middlewares.AdminMiddleware(), func(c *gin.Context) { controllers.UpdateBranchDoctor(c, db) })
+		branchGroup.DELETE("/doctors/:id", middlewares.AdminMiddleware(), func(c *gin.Context) { controllers.DeleteBranchDoctor(c, db) })
 	}
 }

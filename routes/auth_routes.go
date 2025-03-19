@@ -16,6 +16,9 @@ func AuthRoutes(r *gin.Engine, db *gorm.DB) {
 	r.POST("/refresh-token", func(c *gin.Context) {
 		controllers.RefreshTokenHandler(c, db)
 	})
+	r.POST("/logout", func(c *gin.Context) {
+		controllers.Logout(c, db)
+	})
 
 	protected := r.Group("/api")
 	protected.Use(middlewares.AuthMiddleware(db))
@@ -24,8 +27,5 @@ func AuthRoutes(r *gin.Engine, db *gorm.DB) {
 	protected.GET("/users/:id", controllers.GetUserByID)
 	protected.PUT("/users/:id", controllers.UpdateUser)
 	protected.DELETE("/users/:id", controllers.DeleteUser)
-	protected.POST("/logout", func(c *gin.Context) {
-		controllers.Logout(c, db)
-	})
 
 }
