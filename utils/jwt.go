@@ -30,9 +30,8 @@ type Claims struct {
 func GenerateJWT(id uint, email, role string) (string, error) {
 	expirationTime := time.Now().Add(60 * time.Minute)
 	claims := &Claims{
-		ID:    id,
-		Email: email,
-		Role:  role,
+		ID:   id,
+		Role: role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},

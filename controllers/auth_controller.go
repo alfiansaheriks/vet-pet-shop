@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"vet-pet-shop/config"
 	"vet-pet-shop/models"
 	"vet-pet-shop/repositories"
 	"vet-pet-shop/utils"
@@ -31,6 +32,13 @@ func Register(c *gin.Context) {
 		}
 	}
 
+	tx := config.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -41,16 +49,15 @@ func Register(c *gin.Context) {
 	}
 
 	user := models.User{
-		Name:            request.Name,
-		Email:           request.Email,
-		Password:        string(hashedPassword),
-		Role:            request.Role,
-		Phone_Number:    request.Phone_Number,
-		Wa_Phone_Number: request.Wa_Phone_Number,
-		CreatedAt:       time.Now(),
+		Name:      request.Name,
+		Email:     request.Email,
+		Password:  string(hashedPassword),
+		Role:      request.Role,
+		CreatedAt: time.Now(),
 	}
 
 	if err := repositories.CreateUser(&user); err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
 			"error":  "Failed to create user",
@@ -58,10 +65,30 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	userContact := models.Contact{
+		UserID:    user.ID,
+		Handphone: request.Phone_Number,
+		Whatsapp:  request.Wa_Phone_Number,
+	}
+
+	if err := repositories.CreateUserContact(&userContact); err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"error":  "Failed to create contact",
+		})
+		return
+	}
+
+	tx.Commit()
+
 	c.JSON(http.StatusCreated, gin.H{
 		"status":  "success",
 		"message": "User registered successfully!",
-		"data":    user,
+		"data": []interface{}{
+			user,
+			userContact,
+		},
 	})
 }
 
