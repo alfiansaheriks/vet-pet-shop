@@ -61,6 +61,8 @@ func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 
 		c.Set("id", claims.ID)
 		c.Set("role", claims.Role)
+
+		// fmt.Println(claims)
 		c.Next()
 	}
 }
