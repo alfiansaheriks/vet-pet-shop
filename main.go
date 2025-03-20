@@ -16,8 +16,7 @@ func main() {
 
 	db.AutoMigrate(&models.Branch{})
 
-	routes.AuthRoutes(r, db)
-	routes.BranchRoutes(r, db)
+	routes.SetupRoutes(r, db)
 
 	fmt.Println("Server started at http://localhost:8080")
 	r.Run(":8080")

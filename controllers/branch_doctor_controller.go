@@ -37,7 +37,7 @@ func CreateBranchDoctor(c *gin.Context, db *gorm.DB) {
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status": "error",
-			"error":  "User ",
+			"error":  "User not found",
 		})
 		return
 	}

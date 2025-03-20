@@ -15,12 +15,11 @@ func AdminMiddleware() gin.HandlerFunc {
 		if !exists || userRole != "admin" {
 			c.JSON(http.StatusForbidden, gin.H{
 				"status": "error",
-				"error":  "Forbidden",
+				"error":  "Forbidden: You are not an admin!",
 			})
 			c.Abort()
 			return
 		}
-
 		c.Next()
 
 	}
