@@ -5,14 +5,15 @@ import (
 )
 
 type Branch struct {
-	Branch_ID uint    `gorm:"primaryKey"`
-	Name      string  `gorm:"unique;not null" json:"name"`
-	Address   string  `gorm:"not null" json:"address"`
-	Phone     string  `gorm:"unique;not null" json:"phone"`
-	Latitude  float64 `gorm:"not null" json:"latitude"`
-	Longitude float64 `gorm:"not null" json:"longitude"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Branch_ID uint        `gorm:"primaryKey"`
+	Name      string      `gorm:"unique;not null" json:"name"`
+	Address   string      `gorm:"not null" json:"address"`
+	Phone     string      `gorm:"unique;not null" json:"phone"`
+	Latitude  float64     `gorm:"not null" json:"latitude"`
+	Longitude float64     `gorm:"not null" json:"longitude"`
+	CreatedAt time.Time   `json:"-"`
+	UpdatedAt time.Time   `json:"-"`
+	Inventory []Inventory `json:"inventory,omitempty" gorm:"foreignKey:BranchID;constraint:OnDelete:CASCADE;"`
 }
 
 type BranchDoctor struct {

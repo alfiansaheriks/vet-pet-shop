@@ -16,7 +16,7 @@ func (r *ProductRepository) CreateProduct(product *models.Product) error {
 
 func (r *ProductRepository) GetAllProducts() ([]models.Product, error) {
 	var products []models.Product
-	err := r.DB.Find(&products).Error
+	err := r.DB.Preload("ProductImages").Find(&products).Error
 	return products, err
 }
 
@@ -36,19 +36,13 @@ func (r *ProductRepository) DeleteProduct(id uint) error {
 
 func (r *ProductRepository) GetProductByCategory(category string) ([]models.Product, error) {
 	var products []models.Product
-	err := r.DB.Where("category = ?", category).Find(&products).Error
+	err := r.DB.Preload("ProductImages").Where("category = ?", category).Find(&products).Error
 	return products, err
 }
 
-func (r *ProductRepository) GetProductHighestPrice() ([]models.Product, error) {
+func (r *ProductRepository) GetProductByPrice(orderBy string) ([]models.Product, error) {
 	var products []models.Product
-	err := r.DB.Order("price desc").Find(&products).Error
-	return products, err
-}
-
-func (r *ProductRepository) GetProductLowestPrice() ([]models.Product, error) {
-	var products []models.Product
-	err := r.DB.Order("price asc").Find(&products).Error
+	err := r.DB.Preload("ProductImages").Order("price " + orderBy).Find(&products).Error
 	return products, err
 }
 
@@ -60,4 +54,40 @@ func (r *ProductRepository) GetProductBySearch(search string) ([]models.Product,
 
 func (r *ProductRepository) CreateProductImage(productImage *models.ProductImages) error {
 	return r.DB.Create(productImage).Error
+}
+
+func (r *ProductRepository) CreateInventory(inventory *models.Inventory) error {
+	return r.DB.Create(inventory).Error
+}
+
+func (r *ProductRepository) UpdateInventory(inventory models.Inventory) error {
+	return r.DB.Save(inventory).Error
+}
+
+func (r *ProductRepository) DeleteInventory(id uint) error {
+	return r.DB.Delete(&models.Inventory{}, id).Error
+}
+
+func (r *ProductRepository) GetInventories() ([]models.Inventory, error) {
+	var inventory []models.Inventory
+	err := r.DB.Find(&inventory).Error
+	return inventory, err
+}
+
+func (r *ProductRepository) GetInventory(id uint) ([]models.Inventory, error) {
+	var inventory []models.Inventory
+	err := r.DB.Where("id = ?", id).Find(&inventory).Error
+	return inventory, err
+}
+
+func (r *ProductRepository) GetInventoryByProductID(productID uint) ([]models.Inventory, error) {
+	var inventory []models.Inventory
+	err := r.DB.Where("product_id = ?", productID).Find(&inventory).Error
+	return inventory, err
+}
+
+func (r *ProductRepository) GetInventoryByBranchID(branchID uint) ([]models.Inventory, error) {
+	var inventory []models.Inventory
+	err := r.DB.Where("branch_id = ?", branchID).Find(&inventory).Error
+	return inventory, err
 }

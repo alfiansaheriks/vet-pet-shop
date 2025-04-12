@@ -3,7 +3,6 @@ package middlewares
 import (
 	"net/http"
 	"strings"
-	"vet-pet-shop/models"
 	"vet-pet-shop/utils"
 
 	"github.com/gin-gonic/gin"
@@ -30,12 +29,12 @@ func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		var blacklistedToken models.BlacklistedToken
-		if err := db.Where("token = ?", tokenString).First(&blacklistedToken).Error; err == nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token sudah tidak valid"})
-			c.Abort()
-			return
-		}
+		// var blacklistedToken models.BlacklistedToken
+		// if err := db.Where("token = ?", tokenString).First(&blacklistedToken).Error; err == nil {
+		// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Token sudah tidak valid"})
+		// 	c.Abort()
+		// 	return
+		// }
 
 		token, err := jwt.ParseWithClaims(tokenString, &utils.Claims{}, func(token *jwt.Token) (interface{}, error) {
 			return utils.GetJWTKey(), nil

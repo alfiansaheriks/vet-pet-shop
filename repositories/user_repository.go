@@ -27,7 +27,7 @@ func GetAllUsers() ([]models.User, error) {
 
 func GetUserByID(id uint) (models.User, error) {
 	var user models.User
-	err := config.DB.First(&user, id).Error
+	err := config.DB.Preload("Contact").First(&user, id).Error
 	return user, err
 }
 

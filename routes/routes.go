@@ -9,4 +9,6 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	AuthRoutes(r, db)
 	BranchRoutes(r, db)
 	ProductRoutes(r, db)
+	AppointmentRoutes(r, db)
+	PetRoutes(r, db)
 }
