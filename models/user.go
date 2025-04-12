@@ -10,6 +10,7 @@ type User struct {
 	Role      string    `json:"role" gorm:"type:user_role;not null" binding:"required"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	Contact   []Contact `json:"contact,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;"`
 }
 
 type Contact struct {

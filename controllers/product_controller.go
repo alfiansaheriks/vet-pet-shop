@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 	"vet-pet-shop/config"
 	"vet-pet-shop/models"
 	"vet-pet-shop/repositories"
@@ -188,4 +189,182 @@ func DeleteProduct(c *gin.Context, db *gorm.DB) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Product has been deleted"})
+}
+
+func GetProductByCategory(c *gin.Context, db *gorm.DB) {
+	category := c.Param("category")
+
+	ProductRepository := repositories.ProductRepository{DB: db}
+	products, err := ProductRepository.GetProductByCategory(category)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": products})
+}
+
+func GetProductByPrice(c *gin.Context, db *gorm.DB) {
+	orderBy := c.Param("order_by")
+
+	ProductRepository := repositories.ProductRepository{DB: db}
+	products, err := ProductRepository.GetProductByPrice(orderBy)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": products})
+}
+
+func GetProductBySearch(c *gin.Context, db *gorm.DB) {
+	search := c.Query("search")
+
+	ProductRepository := repositories.ProductRepository{DB: db}
+	products, err := ProductRepository.GetProductBySearch(search)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": products})
+}
+
+func CreateInventory(c *gin.Context, db *gorm.DB) {
+	var request models.InventoryRequest
+	if err := c.ShouldBind(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": err.Error()})
+		return
+	}
+
+	inventory := models.Inventory{
+		ProductID:      request.ProductID,
+		BranchID:       request.BranchID,
+		Stock_Quantity: request.Stock_Quantity,
+	}
+
+	ProductRepository := repositories.ProductRepository{DB: db}
+	err := ProductRepository.CreateInventory(&inventory)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": "Failed to create inventory"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"status": "success", "data": inventory})
+}
+
+func UpdateInventory(c *gin.Context, db *gorm.DB) {
+	var request models.InventoryRequest
+	if err := c.ShouldBind(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": err.Error()})
+		return
+	}
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "success", "error": err.Error()})
+		return
+	}
+
+	inventoryRepository := repositories.ProductRepository{DB: db}
+	inventories, err := inventoryRepository.GetInventory(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": err.Error()})
+		return
+	}
+
+	inventory := models.Inventory{
+		ID:             inventories[0].ID,
+		ProductID:      request.ProductID,
+		BranchID:       request.BranchID,
+		Stock_Quantity: request.Stock_Quantity,
+		UpdatedAt:      time.Now(),
+	}
+
+	err = inventoryRepository.UpdateInventory(inventory)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": "Failed to update inventory"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": inventory})
+}
+
+func DeleteInventory(c *gin.Context, db *gorm.DB) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "success", "error": err.Error()})
+		return
+	}
+
+	ProductRepository := repositories.ProductRepository{DB: db}
+	err = ProductRepository.DeleteInventory(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Inventory has been deleted"})
+}
+
+func GetInventories(c *gin.Context, db *gorm.DB) {
+	ProductRepository := repositories.ProductRepository{DB: db}
+	inventories, err := ProductRepository.GetInventories()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": "Failed to get inventories"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": inventories})
+}
+
+func GetInventory(c *gin.Context, db *gorm.DB) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "success", "error": err.Error()})
+		return
+	}
+
+	ProductRepository := repositories.ProductRepository{DB: db}
+	inventories, err := ProductRepository.GetInventory(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": "Failed to get inventory"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": inventories})
+}
+
+func GetInventoryByBranchID(c *gin.Context, db *gorm.DB) {
+	branchID, err := strconv.Atoi(c.Param("branch_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "success", "error": err.Error()})
+		return
+	}
+
+	ProductRepository := repositories.ProductRepository{DB: db}
+	inventories, err := ProductRepository.GetInventoryByBranchID(uint(branchID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": "Failed to get inventory"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": inventories})
+}
+
+func GetInventoryByProductID(c *gin.Context, db *gorm.DB) {
+	productID, err := strconv.Atoi(c.Param("product_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "success", "error": err.Error()})
+		return
+	}
+
+	ProductRepository := repositories.ProductRepository{DB: db}
+	inventories, err := ProductRepository.GetInventoryByProductID(uint(productID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": "Failed to get inventory"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": inventories})
 }

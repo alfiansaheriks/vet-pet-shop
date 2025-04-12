@@ -22,7 +22,7 @@ func (r *BranchRepository) GetAllBranches() ([]models.Branch, error) {
 
 func (r *BranchRepository) GetBranchById(id uint) (*models.Branch, error) {
 	var branch models.Branch
-	err := r.DB.First(&branch, id).Error
+	err := r.DB.Preload("Inventory.Product.ProductImages").First(&branch, id).Error
 	return &branch, err
 }
 
