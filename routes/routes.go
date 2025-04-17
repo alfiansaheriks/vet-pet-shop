@@ -11,4 +11,5 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	ProductRoutes(r, db)
 	AppointmentRoutes(r, db)
 	PetRoutes(r, db)
+	MedicalRecordRoutes(r, db)
 }

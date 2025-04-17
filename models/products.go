@@ -63,3 +63,19 @@ type InventoryRequest struct {
 	BranchID       uint `form:"branch_id" binding:"required"`
 	Stock_Quantity int  `form:"stock" binding:"required"`
 }
+
+type ProductResponse struct {
+	ID          uint      `json:"id"`
+	Name        string    `json:"name"`
+	Category    string    `json:"category"`
+	Description string    `json:"description"`
+	Price       float64   `json:"price"`
+	Unit        string    `json:"unit"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+
+	ProductImages []struct {
+		ID       uint   `json:"id"`
+		ImageURL string `json:"image_url"`
+	} `json:"product_images,omitempty"`
+}

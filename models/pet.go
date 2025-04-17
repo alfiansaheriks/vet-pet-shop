@@ -47,3 +47,9 @@ type PetResponse struct {
 	Weight     float32          `json:"weight"`
 	Customer   CustomerResponse `json:"customer"`
 }
+
+type PetMiniResponse struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
